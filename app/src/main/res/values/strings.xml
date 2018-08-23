@@ -1,0 +1,19 @@
+<resources>
+    <string name="app_name">Lapak Kita (UMKM Upload)</string>
+    <string name="navigation_drawer_open">Open navigation drawer</string>
+    <string name="navigation_drawer_close">Close navigation drawer</string>
+    <string name="google_maps_key">AIzaSyDN7RJFmImYAca96elyZlE5s_fhX-MMuhk</string>
+
+    <string-array name="agenkurir">
+        <item>JNE</item>
+        <item>TIKI</item>
+        <item>POS</item>
+    </string-array>
+    <string-array name="kategoriproduk">
+        <item>Aneka Souvenir</item>
+        <item>Furniture</item>
+        <item>Makanan</item>>
+        <item>Pakaian</item>
+        <item>Tenun</item>
+    </string-array>
+</resources>
