@@ -2,13 +2,12 @@ package ta.widia.lapakkita.umkm;
 
 import android.app.ProgressDialog;
 import android.content.Intent;
-import android.graphics.Color;
 import android.os.AsyncTask;
 import android.os.Bundle;
-import android.support.v4.view.ViewPager;
 import android.support.v7.app.AppCompatActivity;
 import android.text.Html;
 import android.util.Log;
+import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.widget.Button;
@@ -16,20 +15,18 @@ import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.bumptech.glide.Glide;
+
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
-import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 import ta.widia.lapakkita.R;
-import ta.widia.lapakkita.umkm.adapter.ProdukDetailImageAdapter;
-import ta.widia.lapakkita.umkm.model.ItemProdukDetailImage;
 import ta.widia.lapakkita.umkm.util.Config;
 import ta.widia.lapakkita.umkm.util.Request;
 import ta.widia.lapakkita.umkm.util.SessionManager;
@@ -37,16 +34,15 @@ import ta.widia.lapakkita.umkm.util.SessionManager;
 public class ProdukDetail extends AppCompatActivity {
 
     ImageView img_logo;
-    TextView txtNama, txtHarga, txtStock, txtBerat, txtView, txtDesk;
-    Button btnBeli, btnDiskusi;
+    TextView txtKategori, txtNama, txtHarga, txtStock, txtBerat, txtDesk;
+    Button btnHapus, btnEdit;
+    ImageView imgProduk;
     private ProgressDialog pDialog;
     private String url = Config.HOST+"produk_detail.php";
-    private List<ItemProdukDetailImage> imageItem;
-    ViewPager viewPagerImage;
-    ProdukDetailImageAdapter imageAdapter;
+
     SessionManager session;
-    String foto_thumb;
-    String nama, harga, stok, gambar1, gambar2, gambar3, gambar4, berat, desk, umkm, id_umkm, logo, hp, lat, lon;
+
+    String kat_prod, nama, harga, stok, gambar1, gambar2, gambar3, gambar4, berat, desk, umkm, id_umkm, logo, hp, lat, lon;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -61,23 +57,10 @@ public class ProdukDetail extends AppCompatActivity {
         getSupportActionBar().setTitle("Detail Produk");
         getSupportActionBar().setDisplayHomeAsUpEnabled(true);
 
-        viewPagerImage = (ViewPager) findViewById(R.id.viewPagerImage);
-
-        imageItem = new ArrayList<ItemProdukDetailImage>();
-        imageItem.add(new ItemProdukDetailImage(gambar1, "1"));
-        imageItem.add(new ItemProdukDetailImage(gambar2, "2"));
-        imageItem.add(new ItemProdukDetailImage(gambar3, "3"));
-        imageItem.add(new ItemProdukDetailImage(gambar4, "4"));
-
         new getData(id_produk).execute();
+        imgProduk = (ImageView) findViewById(R.id.img_produk);
 
-
-        imageAdapter = new ProdukDetailImageAdapter(ProdukDetail.this, imageItem);
-        viewPagerImage.setAdapter(imageAdapter);
-
-
-
-
+        txtKategori = (TextView) findViewById(R.id.txt_kategori);
         txtNama = (TextView) findViewById(R.id.txt_nama);
         txtHarga = (TextView) findViewById(R.id.txt_harga);
         txtStock = (TextView) findViewById(R.id.txt_stock);
@@ -85,55 +68,29 @@ public class ProdukDetail extends AppCompatActivity {
         //txtView = (TextView) findViewById(R.id.txt_view);
         txtDesk = (TextView) findViewById(R.id.txt_desk);
 
-        btnBeli = (Button) findViewById(R.id.btn_beli);
-        btnDiskusi = (Button) findViewById(R.id.btn_diskusi);
+        btnHapus = (Button) findViewById(R.id.btn_hapus);
+        btnEdit = (Button) findViewById(R.id.btn_edit);
 
-        btnBeli.setOnClickListener(new View.OnClickListener() {
+        btnHapus.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                //kalau belum login
-                if(!session.isLoggedIn()){
-                    Toast.makeText(ProdukDetail.this, "Anda harus login untuk dapat melakukan transaksi!", Toast.LENGTH_SHORT).show();
-                }
-                //kalau sudah login
-                else{
-                    Toast.makeText(ProdukDetail.this, "Hapus nantinya", Toast.LENGTH_SHORT).show();
-                    /*HashMap<String, String> user = session.getUserDetails();
-
-                    String id_pelanggan = user.get(SessionManager.KEY_ID_UMKM);
-                    //lakukan pembelian
-                    //Toast.makeText(ProdukDetail.this, "Anda akan beli produk ini", Toast.LENGTH_SHORT).show();
-                    Intent intent = new Intent(ProdukDetail.this, OrderActivity.class);
-                    intent.putExtra("key_id_produk", id_produk);
-                    intent.putExtra("key_foto", gambar1);
-                    intent.putExtra("key_nama", nama);
-                    intent.putExtra("key_harga", harga);
-                    intent.putExtra("key_ukm", ukm);
-                    startActivity(intent);*/
-                }
+                Toast.makeText(ProdukDetail.this, "Hapus nantinya", Toast.LENGTH_SHORT).show();
             }
         });
 
-        btnDiskusi.setOnClickListener(new View.OnClickListener() {
+        btnEdit.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
                 //kalau belum login
-                if(!session.isLoggedIn()){
-                    Toast.makeText(ProdukDetail.this, "Anda harus login untuk dapat melakukan diskusi!", Toast.LENGTH_SHORT).show();
-                }
-                //kalau sudah login
-                else{
-
-                    Intent intent = new Intent(ProdukDetail.this, EditProduk.class);
-                    intent.putExtra("key_id_produk", id_produk);
-                    intent.putExtra("key_nama", nama);
-                    intent.putExtra("key_harga", harga);
-                    intent.putExtra("key_stok", stok);
-                    intent.putExtra("key_berat", berat);
-                    intent.putExtra("key_desk", desk);
-                    intent.putExtra("key_gambar", gambar1);
-                    startActivity(intent);
-                }
+                Intent intent = new Intent(ProdukDetail.this, EditProduk.class);
+                intent.putExtra("key_id_produk", id_produk);
+                intent.putExtra("key_nama", nama);
+                intent.putExtra("key_harga", harga);
+                intent.putExtra("key_stok", stok);
+                intent.putExtra("key_berat", berat);
+                intent.putExtra("key_desk", desk);
+                intent.putExtra("key_gambar", gambar1);
+                startActivity(intent);
             }
         });
     }
@@ -178,11 +135,12 @@ public class ProdukDetail extends AppCompatActivity {
 
                     if (scs == 1) {
                         JSONArray products = ob.getJSONArray("field");
-                        imageItem.clear();
+
                         for (int i = 0; i < products.length(); i++) {
                             JSONObject c = products.getJSONObject(i);
 
                             // Storing each json item in variable
+                            kat_prod = c.getString("kategori_produk");
                             nama = c.getString("nama_produk");
                             harga = c.getString("harga_produk");
                             stok = c.getString("stok_produk");
@@ -201,11 +159,6 @@ public class ProdukDetail extends AppCompatActivity {
                             hp = c.getString("hp");
                             lat = c.getString("lat");
                             lon = c.getString("lon");
-
-                            imageItem.add(new ItemProdukDetailImage(gambar1, "1"));
-                            imageItem.add(new ItemProdukDetailImage(gambar2, "2"));
-                            imageItem.add(new ItemProdukDetailImage(gambar3, "3"));
-                            imageItem.add(new ItemProdukDetailImage(gambar4, "4"));
 
                         }
                     } else {
@@ -227,9 +180,10 @@ public class ProdukDetail extends AppCompatActivity {
         @Override
         protected void onPostExecute(String s) {
 
-            imageAdapter.notifyDataSetChanged();
             pDialog.dismiss();
 
+            Glide.with(ProdukDetail.this).load(gambar1).into(imgProduk);
+            txtKategori.setText("Kategori: "+kat_prod);
             txtNama.setText(nama);
             txtHarga.setText("Rp. "+harga);
             txtStock.setText("Stock: "+stok);
@@ -258,6 +212,13 @@ public class ProdukDetail extends AppCompatActivity {
     }
 
     @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        // Inflate the menu; this adds items to the action bar if it is present.
+        getMenuInflater().inflate(R.menu.menu_detail, menu);
+        return true;
+    }
+
+    @Override
     public boolean onOptionsItemSelected(MenuItem item) {
         // Handle action bar item clicks here. The action bar will
         // automatically handle clicks on the Home/Up button, so long
@@ -268,6 +229,11 @@ public class ProdukDetail extends AppCompatActivity {
         if (id == android.R.id.home) {
             finish();
             return true;
+        }
+
+        if(id == R.id.action_refresh){
+            finish();
+            startActivity(getIntent());
         }
 
         return super.onOptionsItemSelected(item);

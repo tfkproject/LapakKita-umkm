@@ -44,7 +44,8 @@
                         android:layout_weight="1"
                         android:layout_height="wrap_content"
                         android:text="Pilih Gambar"
-                        android:drawableLeft="@drawable/ic_add_photo_black"/>
+                        android:drawableLeft="@drawable/ic_add_photo_black"
+                        android:visibility="gone"/>
 
                     <!--<Button
                         android:id="@+id/btn_gmbr2"
@@ -69,6 +70,19 @@
                         android:layout_height="wrap_content"
                         android:text="Gambar 4"
                         android:drawableLeft="@drawable/ic_add_photo_black"/>-->
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:textSize="18dp"
+                        android:layout_marginTop="10dp"
+                        android:text="Kategori Produk"/>
+
+                    <Spinner
+                        android:id="@+id/list_kat"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:prompt="@string/prompt"/>
 
 
                     <EditText

@@ -4,11 +4,10 @@
     xmlns:tools="http://schemas.android.com/tools"
     tools:context="ta.widia.lapakkita.umkm.MainActivity">
 
-    <item android:id="@+id/action_search"
+    <item android:id="@+id/action_refresh"
         android:orderInCategory="100"
-        android:title="Pencarian"
-        android:icon="@drawable/ic_search"
-        app:actionViewClass="android.support.v7.widget.SearchView"
+        android:title="Refresh"
+        android:icon="@drawable/ic_refresh"
         app:showAsAction="collapseActionView|ifRoom" />
 
 

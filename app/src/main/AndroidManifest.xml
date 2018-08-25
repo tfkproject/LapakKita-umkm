@@ -24,16 +24,9 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-        <activity android:name=".umkm.UkmDetail"/>
         <activity android:name=".umkm.ProdukDetail"/>
         <activity android:name=".umkm.LoginUmkm"/>
         <activity android:name=".umkm.RegistrasiUmkm"/>
-        <activity android:name=".umkm.BiodataUser"/>
-        <activity android:name=".umkm.BiodataUserEdit"/>
-        <activity android:name=".umkm.OrderActivity"/>
-        <activity android:name=".umkm.PembayaranActivity"/>
-        <activity android:name=".umkm.KonfirmasiBayarActivity"/>
-        <activity android:name=".umkm.ProdukActivity"/>
         <activity android:name=".umkm.InputProduk"/>
         <activity android:name=".umkm.EditProduk"/>
 

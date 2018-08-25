@@ -24,18 +24,13 @@
                 android:layout_height="wrap_content"
                 android:orientation="vertical">
 
-                <android.support.v4.view.ViewPager
-                    android:id="@+id/viewPagerImage"
-                    android:layout_width="match_parent"
-                    android:layout_height="210dp"/>
-
-                <!--<ImageView
+                <ImageView
                     android:id="@+id/img_produk"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:background="?attr/selectableItemBackgroundBorderless"
                     android:fitsSystemWindows="true"
-                    android:scaleType="fitCenter"/>-->
+                    android:scaleType="fitCenter"/>
 
                 <LinearLayout
                     android:layout_width="match_parent"
@@ -49,6 +44,15 @@
                         android:text="Geser untuk melihat gambar lainnya"
                         android:textStyle="italic"
                         android:textSize="12dp"
+                        android:padding="3dp"/>
+
+                    <TextView
+                        android:id="@+id/txt_kategori"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="[kategori]"
+                        android:textStyle="bold"
+                        android:textSize="18dp"
                         android:padding="3dp"/>
 
                     <TextView
@@ -103,14 +107,14 @@
                         android:orientation="horizontal"
                         android:padding="5dp">
                         <Button
-                            android:id="@+id/btn_beli"
+                            android:id="@+id/btn_hapus"
                             android:layout_width="match_parent"
                             android:layout_weight="1"
                             android:layout_height="wrap_content"
                             android:text="Hapus"
                             android:drawableLeft="@drawable/ic_delete_black_24dp"/>
                         <Button
-                            android:id="@+id/btn_diskusi"
+                            android:id="@+id/btn_edit"
                             android:layout_width="match_parent"
                             android:layout_weight="1"
                             android:layout_height="wrap_content"

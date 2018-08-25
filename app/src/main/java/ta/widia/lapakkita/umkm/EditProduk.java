@@ -2,14 +2,17 @@ package ta.widia.lapakkita.umkm;
 
 import android.Manifest;
 import android.app.ProgressDialog;
+import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.database.Cursor;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
+import android.graphics.Color;
 import android.graphics.Matrix;
 import android.graphics.Paint;
+import android.graphics.drawable.BitmapDrawable;
 import android.media.ExifInterface;
 import android.net.Uri;
 import android.os.AsyncTask;
@@ -21,30 +24,44 @@ import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.text.Html;
+import android.util.Base64;
 import android.util.Log;
+import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
+import android.view.ViewGroup;
+import android.widget.AdapterView;
+import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageView;
+import android.widget.Spinner;
 import android.widget.TextView;
 import android.widget.Toast;
 
 import com.bumptech.glide.Glide;
+import com.bumptech.glide.load.resource.bitmap.GlideBitmapDrawable;
+import com.bumptech.glide.request.RequestListener;
 
+import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ExecutionException;
 
 import ta.widia.lapakkita.R;
+import ta.widia.lapakkita.umkm.model.ItemKategori;
 import ta.widia.lapakkita.umkm.util.Config;
 import ta.widia.lapakkita.umkm.util.Request;
 import ta.widia.lapakkita.umkm.util.SessionManager;
@@ -52,14 +69,14 @@ import ta.widia.lapakkita.umkm.util.SessionManager;
 public class EditProduk extends AppCompatActivity {
 
     EditText edtNama, edtHarga, edtBerat, edtStok, edtDesk;
-    Button btnGambar1, btnGambar2, btnGambar3, btnGambar4;
+    Button btnGambar1, btnGambar2, btnGambar3, btnGambar4, btnSubmit;
     TextView txtLokasi;
     ImageView imgProduk;
     private ProgressDialog pDialog;
-    private String url = Config.HOST+"regis_pelanggan.php";
+    private String url = Config.HOST+"produk_edit.php";
     SessionManager session;
     int PLACE_PICKER_REQUEST    =   2;
-    public String timestamp, lat, lon;
+    public String timestamp, id_kategori;
 
     Uri image1, image2, image3, image4;
 
@@ -67,6 +84,13 @@ public class EditProduk extends AppCompatActivity {
     /*int RESULT_SELECT_IMAGE2 = 2;
     int RESULT_SELECT_IMAGE3 = 3;
     int RESULT_SELECT_IMAGE4 = 4;*/
+
+    private Spinner listKat;
+    private SpinAdapter spinAdapter;
+
+    List<ItemKategori> items;
+
+    private static String url_kat = Config.HOST+"kategori.php";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -81,7 +105,11 @@ public class EditProduk extends AppCompatActivity {
             checkPermission();
         }
 
-        String id_produk = getIntent().getStringExtra("key_id_produk");
+        session = new SessionManager(getApplicationContext());
+        HashMap<String, String> user = session.getUserDetails();
+        final String id_umkm = user.get(SessionManager.KEY_ID_UMKM);
+
+        final String id_produk = getIntent().getStringExtra("key_id_produk");
         String nama = getIntent().getStringExtra("key_nama");
         String harga = getIntent().getStringExtra("key_harga");
         String stok = getIntent().getStringExtra("key_stok");
@@ -91,6 +119,19 @@ public class EditProduk extends AppCompatActivity {
 
         imgProduk = (ImageView) findViewById(R.id.img_produk);
         Glide.with(EditProduk.this).load(link_gambar).into(imgProduk);
+
+        listKat = (Spinner) findViewById(R.id.list_kat);
+        listKat.setPrompt("Kategori");
+
+        items = new ArrayList<>();
+
+        new listKategori().execute();
+
+        spinAdapter = new SpinAdapter(EditProduk.this,
+                android.R.layout.simple_spinner_item,
+                items);
+        listKat.setAdapter(spinAdapter);
+        spinAdapter.notifyDataSetChanged();
 
         edtNama = (EditText) findViewById(R.id.edt_nama);
         edtHarga = (EditText) findViewById(R.id.edt_harga);
@@ -137,153 +178,22 @@ public class EditProduk extends AppCompatActivity {
             }
         });*/
 
-    }
+        btnSubmit = (Button) findViewById(R.id.btn_submit);
+        btnSubmit.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
 
-    private class inputProduk extends AsyncTask<Void,Void,String> {
 
-        //variabel untuk tangkap data
-        private int scs = 0;
-        private String psn;
+                String nama = edtNama.getText().toString();
+                String harga = edtHarga.getText().toString();
+                String berat = edtBerat.getText().toString();
+                String stok = edtStok.getText().toString();
+                String desk = edtDesk.getText().toString();
 
-        String nama_pemilik, nama_umkm, no_ktp, alamat, no_hp, email, password,lat, lon;
+                new editProduk(id_produk, id_umkm, id_kategori, nama, desk, berat, harga, stok).execute();
 
-        public inputProduk(
-                String nama_pemilik,
-                String nama_umkm,
-                String no_ktp,
-                String alamat,
-                String no_hp,
-                String email,
-                String password,
-                String lat,
-                String lon){
-            this.nama_pemilik = nama_pemilik;
-            this.nama_umkm = nama_umkm;
-            this.no_ktp = no_ktp;
-            this.alamat = alamat;
-            this.no_hp = no_hp;
-            this.email = email;
-            this.password = password;
-            this.lat = lat;
-            this.lon = lon;
-        }
-
-        @Override
-        protected void onPreExecute() {
-            super.onPreExecute();
-            pDialog = new ProgressDialog(EditProduk.this);
-            pDialog.setMessage("Loading...");
-            pDialog.setIndeterminate(false);
-            pDialog.setCancelable(false);
-            pDialog.show();
-        }
-
-        protected String doInBackground(Void... params) {
-
-            try{
-                //susun parameter
-                HashMap<String,String> detail = new HashMap<>();
-                detail.put("nama_pemilik", nama_pemilik);
-                detail.put("nama_umkm", nama_umkm);
-                detail.put("no_ktp", no_ktp);
-                detail.put("alamat", alamat);
-                detail.put("no_hp", no_hp);
-                detail.put("email", email);
-                detail.put("password", password);
-                detail.put("lat", lat);
-                detail.put("lon", lon);
-
-                try {
-                    //convert this HashMap to encodedUrl to send to php file
-                    String dataToSend = hashMapToUrl(detail);
-                    //make a Http request and send data to php file
-                    String response = Request.post(url,dataToSend);
-
-                    //dapatkan respon
-                    Log.e("Respon", response);
-
-                    JSONObject c = new JSONObject(response);
-                    scs = c.getInt("success");
-
-                    if (scs == 1) {
-                        psn = c.getString("message");
-
-                        // Storing each json item in variable
-                        String id_umkm = c.getString("id_umkm");
-                        String nm_pmlk = c.getString("nama_pemilik");
-                        String nm_umkm = c.getString("nama_umkm");
-                        String noktp = c.getString("no_ktp");
-                        String alamat = c.getString("alamat_umkm");
-                        String nohp = c.getString("no_hp");
-                        String email = c.getString("email");
-                        String desk = c.getString("deskripsi");
-                        String logo = c.getString("logo");
-                        String lat = c.getString("lat");
-                        String lon = c.getString("lon");
-
-                        //buat sesi login
-                        session.createLoginSession(
-                                id_umkm,
-                                nm_pmlk,
-                                nm_umkm,
-                                noktp,
-                                alamat,
-                                nohp,
-                                email,
-                                desk,
-                                logo,
-                                lat,
-                                lon);
-                    } else {
-                        // no data found
-                        psn = c.getString("message");
-                    }
-
-                } catch (JSONException e){
-                    e.printStackTrace();
-                }
-
-            } catch (Exception e){
-                e.printStackTrace();
             }
-
-            return null;
-        }
-
-        @Override
-        protected void onPostExecute(String s) {
-            pDialog.dismiss();
-
-            if(scs == 0){
-                Toast.makeText(EditProduk.this, ""+psn, Toast.LENGTH_SHORT).show();
-            }else{
-                //tutup activity ini
-                finish();
-
-                Intent intent = new Intent(EditProduk.this, MainActivity.class);
-                intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_NEW_TASK);
-                intent.addFlags(Intent.FLAG_ACTIVITY_NO_HISTORY);
-                startActivity(intent);
-            }
-        }
-
-    }
-
-    private String hashMapToUrl(HashMap<String, String> params) throws UnsupportedEncodingException {
-        StringBuilder result = new StringBuilder();
-        boolean first = true;
-        for(Map.Entry<String, String> entry : params.entrySet()){
-            if (first)
-                first = false;
-            else
-                result.append("&");
-
-            result.append(URLEncoder.encode(entry.getKey(), "UTF-8"));
-            result.append("=");
-            result.append(URLEncoder.encode(entry.getValue(), "UTF-8"));
-        }
-
-        return result.toString();
+        });
     }
 
     @Override
@@ -298,6 +208,7 @@ public class EditProduk extends AppCompatActivity {
             finish();
             return true;
         }
+
 
         return super.onOptionsItemSelected(item);
     }
@@ -326,220 +237,239 @@ public class EditProduk extends AppCompatActivity {
         startActivityForResult(gallaryIntent, RESULT_SELECT_IMAGE4);
     }*/
 
-    @Override
-    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
-        super.onActivityResult(requestCode, resultCode, data);
+    private class listKategori extends AsyncTask<Void,Void,String> {
 
-        if (requestCode == RESULT_SELECT_IMAGE1 && resultCode == RESULT_OK && data != null){
-            //set the selected image to image variable
-            image1 = data.getData();
-            imgProduk.setImageURI(Uri.parse(compressImage(image1.toString())));
+        //variabel untuk tangkap data
+        private int scs = 0;
+        private String id_kategori, kategori_produk, psn;
 
-            //get the current timeStamp and strore that in the time Variable
-            Long tsLong = System.currentTimeMillis() / 1000;
-            timestamp = tsLong.toString();
-
-            btnGambar1.setText(timestamp+".JPG");
-
+        @Override
+        protected void onPreExecute() {
+            super.onPreExecute();
         }
 
-        /*if (requestCode == RESULT_SELECT_IMAGE2 && resultCode == RESULT_OK && data != null){
-            //set the selected image to image variable
-            image2 = data.getData();
+        protected String doInBackground(Void... params) {
 
-            //get the current timeStamp and strore that in the time Variable
-            Long tsLong = System.currentTimeMillis() / 1000;
-            timestamp = tsLong.toString();
+            try{
+                //susun parameter
+                HashMap<String,String> detail = new HashMap<>();
 
-            btnGambar2.setText(timestamp+".JPG");
+                try {
+                    //convert this HashMap to encodedUrl to send to php file
+                    String dataToSend = hashMapToUrl(detail);
+                    //make a Http request and send data to php file
+                    String response = Request.post(url_kat, dataToSend);
 
+                    //dapatkan respon
+                    Log.e("Respon", response);
+
+                    JSONObject ob = new JSONObject(response);
+                    scs = ob.getInt("success");
+
+                    if (scs == 1) {
+                        JSONArray products = ob.getJSONArray("field");
+
+                        for (int i = 0; i < products.length(); i++) {
+                            JSONObject c = products.getJSONObject(i);
+
+                            // Storing each json item in variable
+                            id_kategori = c.getString("id_kategori");
+                            kategori_produk = c.getString("kategori_produk");
+
+                            items.add(new ItemKategori(id_kategori, kategori_produk));
+                        }
+                    } else {
+                        // no data found
+                    }
+
+                } catch (JSONException e){
+                    e.printStackTrace();
+                }
+
+            } catch (Exception e){
+                e.printStackTrace();
+            }
+
+            return null;
         }
 
-        if (requestCode == RESULT_SELECT_IMAGE3 && resultCode == RESULT_OK && data != null){
-            //set the selected image to image variable
-            image3 = data.getData();
-
-            //get the current timeStamp and strore that in the time Variable
-            Long tsLong = System.currentTimeMillis() / 1000;
-            timestamp = tsLong.toString();
-
-            btnGambar3.setText(timestamp+".JPG");
-
+        @Override
+        protected void onPostExecute(String s) {
+            //pDialog.dismiss();
         }
-
-        if (requestCode == RESULT_SELECT_IMAGE4 && resultCode == RESULT_OK && data != null){
-            //set the selected image to image variable
-            image4 = data.getData();
-
-            //get the current timeStamp and strore that in the time Variable
-            Long tsLong = System.currentTimeMillis() / 1000;
-            timestamp = tsLong.toString();
-
-            btnGambar4.setText(timestamp+".JPG");
-
-        }*/
-
 
     }
 
-    public String compressImage(String imageUri) {
+    private class editProduk extends AsyncTask<Void,Void,String> {
 
-        String filePath = getRealPathFromURI(imageUri);
-        Bitmap scaledBitmap = null;
+        //variabel untuk tangkap data
+        private int scs = 0;
+        private String psn;
 
-        BitmapFactory.Options options = new BitmapFactory.Options();
+        String id_produk, id_umkm, id_kategori, nama_produk, deskripsi_produk, berat_produk, harga_produk, stok_produk;
 
-//      by setting this field as true, the actual bitmap pixels are not loaded in the memory. Just the bounds are loaded. If
-//      you try the use the bitmap here, you will get null.
-        options.inJustDecodeBounds = true;
-        Bitmap bmp = BitmapFactory.decodeFile(filePath, options);
+        public editProduk(
+                String id_produk,
+                String id_umkm,
+                String id_kategori,
+                String nama_produk,
+                String deskripsi_produk,
+                String berat_produk,
+                String harga_produk,
+                String stok_produk){
+            this.id_produk = id_produk;
+            this.id_umkm = id_umkm;
+            this.id_kategori = id_kategori;
+            this.nama_produk = nama_produk;
+            this.deskripsi_produk = deskripsi_produk;
+            this.berat_produk = berat_produk;
+            this.harga_produk = harga_produk;
+            this.stok_produk = stok_produk;
+        }
 
-        int actualHeight = options.outHeight;
-        int actualWidth = options.outWidth;
+        @Override
+        protected void onPreExecute() {
+            super.onPreExecute();
+            pDialog = new ProgressDialog(EditProduk.this);
+            pDialog.setMessage("Loading...");
+            pDialog.setIndeterminate(false);
+            pDialog.setCancelable(false);
+            pDialog.show();
+        }
 
-//      set max Height and width values of the compressed image
+        protected String doInBackground(Void... params) {
 
-        float maxHeight = 800.0f;
-        float maxWidth = 800.0f;
-        float imgRatio = actualWidth / actualHeight;
-        float maxRatio = maxWidth / maxHeight;
+            try{
+                //susun parameter
+                HashMap<String,String> detail = new HashMap<>();
+                detail.put("id_produk", id_produk);
+                detail.put("id_umkm", id_umkm);
+                detail.put("id_kategori", id_kategori);
+                detail.put("nama_produk", nama_produk);
+                detail.put("deskripsi_produk", deskripsi_produk);
+                detail.put("berat_produk", berat_produk);
+                detail.put("harga_produk", harga_produk);
+                detail.put("stok_produk", stok_produk);
 
-//      width and height values are set maintaining the aspect ratio of the image
+                try {
+                    //convert this HashMap to encodedUrl to send to php file
+                    String dataToSend = hashMapToUrl(detail);
+                    //make a Http request and send data to php file
+                    String response = Request.post(url,dataToSend);
 
-        if (actualHeight > maxHeight || actualWidth > maxWidth) {
-            if (imgRatio < maxRatio) {
-                imgRatio = maxHeight / actualHeight;
-                actualWidth = (int) (imgRatio * actualWidth);
-                actualHeight = (int) maxHeight;
-            } else if (imgRatio > maxRatio) {
-                imgRatio = maxWidth / actualWidth;
-                actualHeight = (int) (imgRatio * actualHeight);
-                actualWidth = (int) maxWidth;
-            } else {
-                actualHeight = (int) maxHeight;
-                actualWidth = (int) maxWidth;
+                    //dapatkan respon
+                    Log.e("Respon", response);
 
+                    JSONObject c = new JSONObject(response);
+                    scs = c.getInt("success");
+
+                    if (scs == 1) {
+                        psn = c.getString("message");
+
+                    } else {
+                        // no data found
+                        psn = c.getString("message");
+                    }
+
+                } catch (JSONException e){
+                    e.printStackTrace();
+                }
+
+            } catch (Exception e){
+                e.printStackTrace();
+            }
+
+            return null;
+        }
+
+        @Override
+        protected void onPostExecute(String s) {
+            pDialog.dismiss();
+
+            if(scs == 0){
+                Toast.makeText(EditProduk.this, ""+psn, Toast.LENGTH_SHORT).show();
+            }else{
+                //tutup activity ini
+                finish();
             }
         }
 
-//      setting inSampleSize value allows to load a scaled down version of the original image
-
-        options.inSampleSize = calculateInSampleSize(options, actualWidth, actualHeight);
-
-//      inJustDecodeBounds set to false to load the actual bitmap
-        options.inJustDecodeBounds = false;
-
-//      this options allow android to claim the bitmap memory if it runs low on memory
-        options.inPurgeable = true;
-        options.inInputShareable = true;
-        options.inTempStorage = new byte[16 * 1024];
-
-        try {
-//          load the bitmap from its path
-            bmp = BitmapFactory.decodeFile(filePath, options);
-        } catch (OutOfMemoryError exception) {
-            exception.printStackTrace();
-
-        }
-        try {
-            scaledBitmap = Bitmap.createBitmap(actualWidth, actualHeight, Bitmap.Config.ARGB_8888);
-        } catch (OutOfMemoryError exception) {
-            exception.printStackTrace();
-        }
-
-        float ratioX = actualWidth / (float) options.outWidth;
-        float ratioY = actualHeight / (float) options.outHeight;
-        float middleX = actualWidth / 2.0f;
-        float middleY = actualHeight / 2.0f;
-
-        Matrix scaleMatrix = new Matrix();
-        scaleMatrix.setScale(ratioX, ratioY, middleX, middleY);
-
-        Canvas canvas = new Canvas(scaledBitmap);
-        canvas.setMatrix(scaleMatrix);
-        canvas.drawBitmap(bmp, middleX - bmp.getWidth() / 2, middleY - bmp.getHeight() / 2, new Paint(Paint.FILTER_BITMAP_FLAG));
-
-//      check the rotation of the image and display it properly
-        ExifInterface exif;
-        try {
-            exif = new ExifInterface(filePath);
-
-            int orientation = exif.getAttributeInt(
-                    ExifInterface.TAG_ORIENTATION, 0);
-            Log.d("EXIF", "Exif: " + orientation);
-            Matrix matrix = new Matrix();
-            if (orientation == 6) {
-                matrix.postRotate(90);
-                Log.d("EXIF", "Exif: " + orientation);
-            } else if (orientation == 3) {
-                matrix.postRotate(180);
-                Log.d("EXIF", "Exif: " + orientation);
-            } else if (orientation == 8) {
-                matrix.postRotate(270);
-                Log.d("EXIF", "Exif: " + orientation);
-            }
-            scaledBitmap = Bitmap.createBitmap(scaledBitmap, 0, 0,
-                    scaledBitmap.getWidth(), scaledBitmap.getHeight(), matrix,
-                    true);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-
-        FileOutputStream out = null;
-        String filename = getFilename();
-        try {
-            out = new FileOutputStream(filename);
-
-//          write the compressed bitmap at the destination specified by filename.
-            scaledBitmap.compress(Bitmap.CompressFormat.JPEG, 100, out);
-
-        } catch (FileNotFoundException e) {
-            e.printStackTrace();
-        }
-
-        return filename;
-
     }
 
-    public String getFilename() {
-        File file = new File(Environment.getExternalStorageDirectory().getPath(), "MyFolder/Images");
-        if (!file.exists()) {
-            file.mkdirs();
-        }
-        String uriSting = (file.getAbsolutePath() + "/" + System.currentTimeMillis() + ".jpg");
-        return uriSting;
+    private String hashMapToUrl(HashMap<String, String> params) throws UnsupportedEncodingException {
+        StringBuilder result = new StringBuilder();
+        boolean first = true;
+        for(Map.Entry<String, String> entry : params.entrySet()){
+            if (first)
+                first = false;
+            else
+                result.append("&");
 
+            result.append(URLEncoder.encode(entry.getKey(), "UTF-8"));
+            result.append("=");
+            result.append(URLEncoder.encode(entry.getValue(), "UTF-8"));
+        }
+
+        return result.toString();
     }
 
-    private String getRealPathFromURI(String contentURI) {
-        Uri contentUri = Uri.parse(contentURI);
-        Cursor cursor = getContentResolver().query(contentUri, null, null, null, null);
-        if (cursor == null) {
-            return contentUri.getPath();
-        } else {
-            cursor.moveToFirst();
-            int index = cursor.getColumnIndex(MediaStore.Images.ImageColumns.DATA);
-            return cursor.getString(index);
-        }
-    }
+    public class SpinAdapter extends ArrayAdapter<ItemKategori>{
 
-    public int calculateInSampleSize(BitmapFactory.Options options, int reqWidth, int reqHeight) {
-        final int height = options.outHeight;
-        final int width = options.outWidth;
-        int inSampleSize = 1;
+        // Your sent context
+        private Context context;
+        // Your custom values for the spinner (User)
+        private List<ItemKategori> values;
 
-        if (height > reqHeight || width > reqWidth) {
-            final int heightRatio = Math.round((float) height / (float) reqHeight);
-            final int widthRatio = Math.round((float) width / (float) reqWidth);
-            inSampleSize = heightRatio < widthRatio ? heightRatio : widthRatio;
-        }
-        final float totalPixels = width * height;
-        final float totalReqPixelsCap = reqWidth * reqHeight * 2;
-        while (totalPixels / (inSampleSize * inSampleSize) > totalReqPixelsCap) {
-            inSampleSize++;
+        public SpinAdapter(Context context, int textViewResourceId,
+                           List<ItemKategori> values) {
+            super(context, textViewResourceId, values);
+            this.context = context;
+            this.values = values;
         }
 
-        return inSampleSize;
+        @Override
+        public int getCount(){
+            return values.size();
+        }
+
+        @Override
+        public ItemKategori getItem(int position){
+            return values.get(position);
+        }
+
+        @Override
+        public long getItemId(int position){
+            return position;
+        }
+
+
+        // And the "magic" goes here
+        // This is for the "passive" state of the spinner
+        @Override
+        public View getView(int position, View convertView, ViewGroup parent) {
+            // I created a dynamic TextView here, but you can reference your own  custom layout for each spinner item
+            TextView label = (TextView) super.getView(position, convertView, parent);
+
+            // Then you can get the current item using the values array (Users array) and the current position
+            // You can NOW reference each method you has created in your bean object (User class)
+            label.setText(values.get(position).getId_kategori());
+
+            // And finally return your dynamic (or custom) view for each spinner item
+            id_kategori = values.get(position).getId_kategori();
+            return label;
+        }
+
+        // And here is when the "chooser" is popped up
+        // Normally is the same view, but you can customize it if you want
+        @Override
+        public View getDropDownView(int position, View convertView,
+                                    ViewGroup parent) {
+            TextView label = (TextView) super.getDropDownView(position, convertView, parent);
+
+            label.setText(values.get(position).getNama_kategori());
+
+            return label;
+        }
     }
 
     public static final int MY_PERMISSIONS_REQUEST_LOCATION = 99;

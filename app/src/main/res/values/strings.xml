@@ -3,7 +3,7 @@
     <string name="navigation_drawer_open">Open navigation drawer</string>
     <string name="navigation_drawer_close">Close navigation drawer</string>
     <string name="google_maps_key">AIzaSyDN7RJFmImYAca96elyZlE5s_fhX-MMuhk</string>
-
+    <string name="prompt">Kategori</string>
     <string-array name="agenkurir">
         <item>JNE</item>
         <item>TIKI</item>

@@ -75,13 +75,13 @@
                         android:textSize="18dp"
                         android:layout_marginTop="10dp"
                         android:text="Kategori Produk"/>
+
                     <Spinner
-                        android:id="@+id/kategori"
+                        android:id="@+id/list_kat"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:entries="@array/kategoriproduk">
+                        android:prompt="@string/prompt"/>
 
-                    </Spinner>
                     <EditText
                         android:id="@+id/edt_nama"
                         android:layout_width="match_parent"

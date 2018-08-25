@@ -77,9 +77,9 @@ public class MainActivity extends AppCompatActivity {
 
             rc = (RecyclerView) findViewById(R.id.recycler_view);
 
-            new getProduk(id_umkm).execute();
-
             items = new ArrayList<>();
+
+            ////new getProduk(id_umkm).execute();
 
             adapter = new ProdukAdapter(MainActivity.this, items, new ProdukAdapter.AdapterListener() {
                 @Override
@@ -235,5 +235,16 @@ public class MainActivity extends AppCompatActivity {
         }
 
         return super.onOptionsItemSelected(item);
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        HashMap<String, String> user = session.getUserDetails();
+        String id_umkm = user.get(SessionManager.KEY_ID_UMKM);
+        String nm_pmlk = user.get(SessionManager.KEY_NM_PMLK);
+
+        items.clear();
+        new getProduk(id_umkm).execute();
     }
 }
